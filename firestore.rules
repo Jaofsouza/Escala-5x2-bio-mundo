@@ -1,0 +1,213 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidDateStr(d) {
+      return d is string && d.size() == 10 && d.matches('^\\d{4}-\\d{2}-\\d{2}$');
+    }
+
+    function isValidHoraStr(h) {
+      return h is string && h.size() == 5 && h.matches('^\\d{2}:\\d{2}$');
+    }
+
+    function isValidTimestampStr(ts) {
+      return ts is string && ts.size() >= 10 && ts.size() <= 40;
+    }
+
+    function isValidEmployeeId(empId) {
+      return empId is string && empId in ['vendedor1', 'vendedor2', 'admin1', 'admin2', 'gerente1', ''];
+    }
+
+    function isValidEquipeConfig(data) {
+      return data.keys().hasAll([
+          'vendedor1',
+          'vendedor2',
+          'admin1',
+          'admin2',
+          'gerente1',
+          'secao7Inicializada',
+          'coberturaInicializada',
+          'atualizadoEm'
+        ])
+        && data.keys().hasOnly([
+          'vendedor1',
+          'vendedor2',
+          'admin1',
+          'admin2',
+          'gerente1',
+          'secao7Inicializada',
+          'coberturaInicializada',
+          'atualizadoEm'
+        ])
+        && data.vendedor1 is string && data.vendedor1.size() >= 1 && data.vendedor1.size() <= 60
+        && data.vendedor2 is string && data.vendedor2.size() >= 1 && data.vendedor2.size() <= 60
+        && data.admin1 is string && data.admin1.size() >= 1 && data.admin1.size() <= 60
+        && data.admin2 is string && data.admin2.size() >= 1 && data.admin2.size() <= 60
+        && data.gerente1 is string && data.gerente1.size() >= 1 && data.gerente1.size() <= 60
+        && data.secao7Inicializada is bool
+        && data.coberturaInicializada is bool
+        && isValidTimestampStr(data.atualizadoEm);
+    }
+
+    function isValidExcecaoPadrao(data) {
+      return data.keys().hasAll(['tipo', 'funcionarioId', 'dataInicio', 'dataFim', 'novoEstado', 'quemCobre', 'motivo', 'criadoEm', 'atualizadoEm'])
+        && data.keys().hasOnly(['tipo', 'funcionarioId', 'dataInicio', 'dataFim', 'novoEstado', 'quemCobre', 'motivo', 'criadoEm', 'atualizadoEm'])
+        && data.tipo is string && data.tipo in ['ferias', 'ausencia', 'troca_folga', 'loja_fechada']
+        && isValidEmployeeId(data.funcionarioId)
+        && (data.tipo == 'loja_fechada' ? data.funcionarioId == '' : data.funcionarioId != '')
+        && isValidDateStr(data.dataInicio)
+        && isValidDateStr(data.dataFim)
+        && data.dataInicio <= data.dataFim
+        && data.novoEstado is string && data.novoEstado in ['trabalha', 'folga', '']
+        && (data.tipo == 'troca_folga' ? data.novoEstado in ['trabalha', 'folga'] : data.novoEstado == '')
+        && data.quemCobre is string && data.quemCobre.size() <= 60
+        && data.motivo is string && data.motivo.size() <= 200
+        && isValidTimestampStr(data.criadoEm)
+        && isValidTimestampStr(data.atualizadoEm);
+    }
+
+    function isValidExcecaoCobertura(data) {
+      return data.keys().hasAll([
+          'tipo',
+          'funcionarioId',
+          'dataInicio',
+          'dataFim',
+          'novoEstado',
+          'quemCobre',
+          'coberturaPorId',
+          'cobreFuncionarioId',
+          'modo',
+          'horaInicio',
+          'horaFim',
+          'origemFeriasId',
+          'motivo',
+          'criadoEm',
+          'atualizadoEm'
+        ])
+        && data.keys().hasOnly([
+          'tipo',
+          'funcionarioId',
+          'dataInicio',
+          'dataFim',
+          'novoEstado',
+          'quemCobre',
+          'coberturaPorId',
+          'cobreFuncionarioId',
+          'modo',
+          'horaInicio',
+          'horaFim',
+          'origemFeriasId',
+          'motivo',
+          'criadoEm',
+          'atualizadoEm'
+        ])
+        && data.tipo == 'cobertura'
+        && data.funcionarioId == ''
+        && data.novoEstado == ''
+        && data.quemCobre is string && data.quemCobre.size() <= 60
+        && isValidEmployeeId(data.coberturaPorId) && data.coberturaPorId != ''
+        && isValidEmployeeId(data.cobreFuncionarioId) && data.cobreFuncionarioId != ''
+        && isValidDateStr(data.dataInicio)
+        && isValidDateStr(data.dataFim)
+        && data.dataInicio <= data.dataFim
+        && data.modo is string && data.modo in ['turno_completo', 'faixa']
+        && (data.modo == 'faixa'
+            ? (isValidHoraStr(data.horaInicio) && isValidHoraStr(data.horaFim) && data.horaInicio < data.horaFim)
+            : (data.horaInicio == '' && data.horaFim == ''))
+        && data.origemFeriasId is string && data.origemFeriasId.size() <= 128
+        && data.motivo is string && data.motivo.size() <= 200
+        && isValidTimestampStr(data.criadoEm)
+        && isValidTimestampStr(data.atualizadoEm);
+    }
+
+    function isValidExcecao(data) {
+      return isValidExcecaoPadrao(data) || isValidExcecaoCobertura(data);
+    }
+
+    function isValidHistoricoItem(data) {
+      return data.keys().hasAll(['acao', 'categoria', 'afetado', 'periodo', 'motivo', 'detalhes', 'criadoEm'])
+        && data.keys().hasOnly(['acao', 'categoria', 'afetado', 'periodo', 'motivo', 'detalhes', 'criadoEm'])
+        && data.acao is string && data.acao in ['criacao', 'edicao', 'remocao']
+        && data.categoria is string && data.categoria in ['ferias', 'ausencia', 'troca_folga', 'loja_fechada', 'equipe', 'cobertura']
+        && data.afetado is string && data.afetado.size() >= 1 && data.afetado.size() <= 100
+        && data.periodo is string && data.periodo.size() <= 40
+        && data.motivo is string && data.motivo.size() <= 200
+        && data.detalhes is string && data.detalhes.size() <= 300
+        && isValidTimestampStr(data.criadoEm);
+    }
+
+    match /test/connection {
+      allow get: if true;
+      allow list, write: if false;
+    }
+
+    match /config/{configId} {
+      allow get: if configId == 'equipe';
+      allow list: if false;
+      allow create: if configId == 'equipe' && isValidEquipeConfig(incoming());
+      allow update: if configId == 'equipe'
+        && isValidEquipeConfig(incoming())
+        && (!existing().get('secao7Inicializada', false) || incoming().secao7Inicializada == true)
+        && (!existing().get('coberturaInicializada', false) || incoming().coberturaInicializada == true)
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'vendedor1',
+          'vendedor2',
+          'admin1',
+          'admin2',
+          'gerente1',
+          'secao7Inicializada',
+          'coberturaInicializada',
+          'atualizadoEm'
+        ]);
+      allow delete: if false;
+    }
+
+    match /excecoes/{excecaoId} {
+      allow get: if isValidId(excecaoId);
+      allow list: if true;
+      allow create: if isValidId(excecaoId) && isValidExcecao(incoming());
+      allow update: if isValidId(excecaoId)
+        && isValidExcecao(incoming())
+        && incoming().criadoEm == existing().criadoEm
+        && incoming().tipo == existing().tipo
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'funcionarioId',
+          'dataInicio',
+          'dataFim',
+          'novoEstado',
+          'quemCobre',
+          'coberturaPorId',
+          'cobreFuncionarioId',
+          'modo',
+          'horaInicio',
+          'horaFim',
+          'origemFeriasId',
+          'motivo',
+          'atualizadoEm'
+        ]);
+      allow delete: if isValidId(excecaoId);
+    }
+
+    match /historico/{historicoId} {
+      allow get: if isValidId(historicoId);
+      allow list: if true;
+      allow create: if isValidId(historicoId) && isValidHistoricoItem(incoming());
+      allow update, delete: if false;
+    }
+  }
+}

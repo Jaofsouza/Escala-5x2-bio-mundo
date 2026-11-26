@@ -1,0 +1,224 @@
+{
+  "entities": {
+    "EquipeConfig": {
+      "title": "EquipeConfig",
+      "description": "Configuração dos nomes editáveis dos 4 funcionários + gerente e controle de inicialização.",
+      "type": "object",
+      "properties": {
+        "vendedor1": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "description": "Nome do Vendedor 1 (turno manhã)."
+        },
+        "vendedor2": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "description": "Nome do Vendedor 2 (turno tarde)."
+        },
+        "admin1": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "description": "Nome do Administrativo 1."
+        },
+        "admin2": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "description": "Nome do Administrativo 2."
+        },
+        "gerente1": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "description": "Nome do integrante da Gerência (inicialmente João)."
+        },
+        "secao7Inicializada": {
+          "type": "boolean",
+          "description": "Indica se as exceções iniciais da Seção 7 já foram gravadas."
+        },
+        "coberturaInicializada": {
+          "type": "boolean",
+          "description": "Indica se as coberturas iniciais de João já foram gravadas."
+        },
+        "atualizadoEm": {
+          "type": "string",
+          "maxLength": 40,
+          "description": "Timestamp ISO da última atualização."
+        }
+      },
+      "required": [
+        "vendedor1",
+        "vendedor2",
+        "admin1",
+        "admin2",
+        "gerente1",
+        "secao7Inicializada",
+        "coberturaInicializada",
+        "atualizadoEm"
+      ]
+    },
+    "Excecao": {
+      "title": "Excecao",
+      "description": "Exceção de escala (férias, ausência comum, troca de folga, loja fechada ou cobertura).",
+      "type": "object",
+      "properties": {
+        "tipo": {
+          "type": "string",
+          "enum": ["ferias", "ausencia", "troca_folga", "loja_fechada", "cobertura"],
+          "description": "Categoria da exceção."
+        },
+        "funcionarioId": {
+          "type": "string",
+          "enum": ["vendedor1", "vendedor2", "admin1", "admin2", "gerente1", ""],
+          "description": "Identificador do funcionário afetado, ou vazio quando loja_fechada/cobertura."
+        },
+        "dataInicio": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "maxLength": 10,
+          "description": "Data inicial no formato YYYY-MM-DD."
+        },
+        "dataFim": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "maxLength": 10,
+          "description": "Data final no formato YYYY-MM-DD."
+        },
+        "novoEstado": {
+          "type": "string",
+          "enum": ["trabalha", "folga", ""],
+          "description": "Estado aplicado na troca de folga."
+        },
+        "quemCobre": {
+          "type": "string",
+          "maxLength": 60,
+          "description": "ID ou nome opcional de quem cobre as férias."
+        },
+        "coberturaPorId": {
+          "type": "string",
+          "enum": ["vendedor1", "vendedor2", "admin1", "admin2", "gerente1", ""],
+          "description": "Quem realiza a cobertura (tipo cobertura)."
+        },
+        "cobreFuncionarioId": {
+          "type": "string",
+          "enum": ["vendedor1", "vendedor2", "admin1", "admin2", ""],
+          "description": "Funcionário que está sendo coberto (tipo cobertura)."
+        },
+        "modo": {
+          "type": "string",
+          "enum": ["turno_completo", "faixa", ""],
+          "description": "Modo da cobertura."
+        },
+        "horaInicio": {
+          "type": "string",
+          "maxLength": 5,
+          "description": "Hora inicial HH:MM no modo faixa."
+        },
+        "horaFim": {
+          "type": "string",
+          "maxLength": 5,
+          "description": "Hora final HH:MM no modo faixa."
+        },
+        "origemFeriasId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "ID da exceção de férias associada (opcional)."
+        },
+        "motivo": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Motivo exibido no selo alterado."
+        },
+        "criadoEm": {
+          "type": "string",
+          "maxLength": 40,
+          "description": "Timestamp ISO de criação."
+        },
+        "atualizadoEm": {
+          "type": "string",
+          "maxLength": 40,
+          "description": "Timestamp ISO de atualização."
+        }
+      },
+      "required": [
+        "tipo",
+        "funcionarioId",
+        "dataInicio",
+        "dataFim",
+        "novoEstado",
+        "quemCobre",
+        "motivo",
+        "criadoEm",
+        "atualizadoEm"
+      ]
+    },
+    "HistoricoItem": {
+      "title": "HistoricoItem",
+      "description": "Registro de auditoria de alterações realizadas na aba Gerente.",
+      "type": "object",
+      "properties": {
+        "acao": {
+          "type": "string",
+          "enum": ["criacao", "edicao", "remocao"],
+          "description": "Tipo de ação registrada."
+        },
+        "categoria": {
+          "type": "string",
+          "enum": ["ferias", "ausencia", "troca_folga", "loja_fechada", "equipe", "cobertura"],
+          "description": "Área afetada pela alteração."
+        },
+        "afetado": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Pessoa ou recurso afetado."
+        },
+        "periodo": {
+          "type": "string",
+          "maxLength": 40,
+          "description": "Data ou período formatado."
+        },
+        "motivo": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Motivo informado."
+        },
+        "detalhes": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Resumo da alteração."
+        },
+        "criadoEm": {
+          "type": "string",
+          "maxLength": 40,
+          "description": "Timestamp ISO do registro."
+        }
+      },
+      "required": [
+        "acao",
+        "categoria",
+        "afetado",
+        "periodo",
+        "motivo",
+        "detalhes",
+        "criadoEm"
+      ]
+    }
+  },
+  "firestore": {
+    "/config/{configId}": {
+      "schema": { "$ref": "#/entities/EquipeConfig" },
+      "description": "Configuração compartilhada da equipe (documento equipe)."
+    },
+    "/excecoes/{excecaoId}": {
+      "schema": { "$ref": "#/entities/Excecao" },
+      "description": "Coleção compartilhada de férias, ausências, trocas de folga, feriados e coberturas."
+    },
+    "/historico/{historicoId}": {
+      "schema": { "$ref": "#/entities/HistoricoItem" },
+      "description": "Histórico compartilhado de alterações do gerente."
+    }
+  }
+}
